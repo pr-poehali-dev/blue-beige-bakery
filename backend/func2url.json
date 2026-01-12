@@ -1,3 +1,6 @@
 {
+  "payment": "https://functions.poehali.dev/d81756e9-fa78-49a3-9a65-9fae32ab763b",
+  "admin": "https://functions.poehali.dev/cd56016a-d013-4a6b-8794-fb405aa8ec96",
+  "orders-get": "https://functions.poehali.dev/f0943979-e8e2-430e-a033-5aa76339e43b",
   "orders": "https://functions.poehali.dev/19679602-8109-4a27-ae20-8fb923d65b8b"
 }

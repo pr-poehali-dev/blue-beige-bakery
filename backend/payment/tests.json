@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS request for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Test POST without required params",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "create_payment"
+      },
+      "expectedStatus": 400
+    }
+  ]
+}

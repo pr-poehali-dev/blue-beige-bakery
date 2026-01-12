@@ -122,6 +122,7 @@ const Index = () => {
   const handleOrderSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const paymentMethod = formData.get('payment_method') as string;
     
     const orderData = {
       customer_name: formData.get('name') as string,
@@ -142,12 +143,36 @@ const Index = () => {
       });
 
       if (response.ok) {
-        toast({
-          title: "Заказ принят!",
-          description: "Мы отправили подтверждение на вашу почту",
-        });
-        e.currentTarget.reset();
-        setIsOrderFormOpen(false);
+        const result = await response.json();
+        const orderId = result.order_id;
+        
+        if (paymentMethod === 'online') {
+          const paymentResponse = await fetch('https://functions.poehali.dev/d81756e9-fa78-49a3-9a65-9fae32ab763b', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'create_payment',
+              order_id: orderId,
+              amount: getTotalPrice(),
+              description: `Оплата заказа #${orderId}`,
+              return_url: window.location.origin + '/my-orders'
+            }),
+          });
+          
+          if (paymentResponse.ok) {
+            const paymentData = await paymentResponse.json();
+            window.location.href = paymentData.payment_url;
+          } else {
+            throw new Error('Ошибка создания платежа');
+          }
+        } else {
+          toast({
+            title: "Заказ принят!",
+            description: "Мы отправили подтверждение на вашу почту",
+          });
+          e.currentTarget.reset();
+          setIsOrderFormOpen(false);
+        }
       } else {
         throw new Error('Ошибка отправки заказа');
       }
@@ -433,12 +458,42 @@ const Index = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="comments">Комментарий к заказу</Label>
-                  <Textarea id="comments" placeholder="Особые пожелания, время доставки и т.д." rows={4} />
+                  <Textarea id="comments" name="comments" placeholder="Особые пожелания, время доставки и т.д." rows={4} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Способ оплаты</Label>
+                  <RadioGroup defaultValue="cash" name="payment_method">
+                    <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-accent/50 transition-colors">
+                      <RadioGroupItem value="cash" id="cash" />
+                      <Label htmlFor="cash" className="cursor-pointer flex-1">
+                        <div className="flex items-center gap-2">
+                          <Icon name="Banknote" size={20} className="text-primary" />
+                          <div>
+                            <div className="font-medium">Наличными при получении</div>
+                            <div className="text-sm text-muted-foreground">Оплата курьеру или в пекарне</div>
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-accent/50 transition-colors">
+                      <RadioGroupItem value="online" id="online" />
+                      <Label htmlFor="online" className="cursor-pointer flex-1">
+                        <div className="flex items-center gap-2">
+                          <Icon name="CreditCard" size={20} className="text-primary" />
+                          <div>
+                            <div className="font-medium">Онлайн-оплата картой</div>
+                            <div className="text-sm text-muted-foreground">Безопасная оплата через ЮKassa</div>
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
                 <Button type="submit" size="lg" className="w-full">
                   <Icon name="Send" size={20} className="mr-2" />
-                  Отправить заказ
+                  Оформить заказ
                 </Button>
               </form>
             </CardContent>
@@ -558,10 +613,10 @@ const Index = () => {
             <div>
               <h4 className="font-semibold mb-4">Информация</h4>
               <div className="space-y-2 text-sm text-muted-foreground">
+                <div><a href="/my-orders" className="hover:text-foreground transition-colors">Мои заказы</a></div>
                 <div>Доставка и оплата</div>
                 <div>Политика конфиденциальности</div>
                 <div>Вакансии</div>
-                <div>Отзывы</div>
               </div>
             </div>
             <div>

@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS request for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Test GET orders without params",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400
+    },
+    {
+      "name": "Test GET orders by phone",
+      "method": "GET",
+      "path": "/?phone=%2B7%20999%20123-45-67",
+      "expectedStatus": 200
+    }
+  ]
+}
