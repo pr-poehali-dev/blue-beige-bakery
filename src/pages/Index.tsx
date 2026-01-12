@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,10 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import { CartSheet } from '@/components/CartSheet';
+import { useCart, Product } from '@/lib/cart';
 
 const Index = () => {
   const { toast } = useToast();
+  const { addItem, getTotalPrice, items } = useCart();
   const [deliveryMethod, setDeliveryMethod] = useState('delivery');
+  const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
+  const orderFormRef = useRef<HTMLDivElement>(null);
 
   const products = [
     {
@@ -99,13 +104,67 @@ const Index = () => {
     }
   ];
 
-  const handleOrderSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddToCart = (product: Product) => {
+    addItem(product);
     toast({
-      title: "Заказ принят!",
-      description: "Мы свяжемся с вами в ближайшее время для подтверждения",
+      title: "Добавлено в корзину!",
+      description: `${product.name} добавлен в корзину`,
     });
   };
+
+  const handleCheckout = () => {
+    setIsOrderFormOpen(true);
+    setTimeout(() => {
+      orderFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const handleOrderSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    const orderData = {
+      customer_name: formData.get('name') as string,
+      customer_phone: formData.get('phone') as string,
+      customer_email: formData.get('email') as string,
+      delivery_method: deliveryMethod,
+      delivery_address: deliveryMethod === 'delivery' ? formData.get('address') as string : '',
+      comments: formData.get('comments') as string,
+      items: items,
+      total_amount: getTotalPrice(),
+    };
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/19679602-8109-4a27-ae20-8fb923d65b8b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Заказ принят!",
+          description: "Мы отправили подтверждение на вашу почту",
+        });
+        e.currentTarget.reset();
+        setIsOrderFormOpen(false);
+      } else {
+        throw new Error('Ошибка отправки заказа');
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось отправить заказ. Попробуйте позже.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (items.length > 0) {
+      setIsOrderFormOpen(true);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,10 +182,13 @@ const Index = () => {
             <a href="#blog" className="text-foreground/80 hover:text-foreground transition-colors">Блог</a>
             <a href="#contacts" className="text-foreground/80 hover:text-foreground transition-colors">Контакты</a>
           </nav>
-          <Button size="sm">
-            <Icon name="Phone" size={16} className="mr-2" />
-            Позвонить
-          </Button>
+          <div className="flex items-center gap-2">
+            <CartSheet onCheckout={handleCheckout} />
+            <Button size="sm">
+              <Icon name="Phone" size={16} className="mr-2" />
+              Позвонить
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -184,7 +246,7 @@ const Index = () => {
                     <CardDescription className="text-base">{product.description}</CardDescription>
                   </CardHeader>
                   <CardFooter>
-                    <Button className="w-full">
+                    <Button className="w-full" onClick={() => handleAddToCart(product)}>
                       <Icon name="ShoppingCart" size={18} className="mr-2" />
                       В корзину
                     </Button>
@@ -208,7 +270,7 @@ const Index = () => {
                       <CardDescription className="text-base">{product.description}</CardDescription>
                     </CardHeader>
                     <CardFooter>
-                      <Button className="w-full">
+                      <Button className="w-full" onClick={() => handleAddToCart(product)}>
                         <Icon name="ShoppingCart" size={18} className="mr-2" />
                         В корзину
                       </Button>
@@ -286,7 +348,7 @@ const Index = () => {
         </div>
       </section>
 
-      <section id="order" className="py-20 bg-gradient-to-br from-primary/5 to-accent/10">
+      <section id="order" className="py-20 bg-gradient-to-br from-primary/5 to-accent/10" ref={orderFormRef}>
         <div className="container max-w-3xl">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">Оформить заказ</h2>

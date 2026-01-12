@@ -1,0 +1,51 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS request for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedHeaders": {
+        "Access-Control-Allow-Origin": "*"
+      }
+    },
+    {
+      "name": "Test POST order with valid data",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "customer_name": "Иван Иванов",
+        "customer_phone": "+7 999 123-45-67",
+        "customer_email": "ivan@example.com",
+        "delivery_method": "delivery",
+        "delivery_address": "ул. Пушкина, 10",
+        "comments": "Позвонить за 30 минут",
+        "items": [
+          {
+            "id": 1,
+            "name": "Круассан классический",
+            "price": 180,
+            "quantity": 2
+          }
+        ],
+        "total_amount": 360
+      },
+      "expectedStatus": 200
+    },
+    {
+      "name": "Test POST order without required fields",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "customer_name": "",
+        "customer_phone": "",
+        "items": []
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
